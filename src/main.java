@@ -1,0 +1,310 @@
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.rmi.RemoteException;
+import java.security.GeneralSecurityException;
+import java.security.KeyPair;
+import java.security.KeyStore;
+import java.security.Provider;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Properties;
+import java.util.UUID;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.xml.crypto.MarshalException;
+import javax.xml.crypto.dsig.CanonicalizationMethod;
+import javax.xml.crypto.dsig.DigestMethod;
+import javax.xml.crypto.dsig.Reference;
+import javax.xml.crypto.dsig.SignatureMethod;
+import javax.xml.crypto.dsig.SignedInfo;
+import javax.xml.crypto.dsig.Transform;
+import javax.xml.crypto.dsig.XMLSignature;
+import javax.xml.crypto.dsig.XMLSignatureException;
+import javax.xml.crypto.dsig.XMLSignatureFactory;
+import javax.xml.crypto.dsig.dom.DOMSignContext;
+import javax.xml.crypto.dsig.keyinfo.KeyInfo;
+import javax.xml.crypto.dsig.keyinfo.KeyInfoFactory;
+import javax.xml.crypto.dsig.spec.C14NMethodParameterSpec;
+import javax.xml.crypto.dsig.spec.TransformParameterSpec;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.apache.axis.types.Id;
+import org.apache.axis.types.URI;
+import org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.ApplicationType;
+import org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.DocumentField;
+import org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.DocumentMetadataValueBase;
+import org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.OperationResultOfArrayOfApplicationTypewJCT_PyJf;
+import org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.OperationResultOfArrayOfDocumentFieldwJCT_PyJf;
+import org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.OperationResultOfArrayOfDocumentMetadataValueBasewJCT_PyJf;
+import org.tempuri.IWidgetsProxy;
+import org.w3.www._2000._09.xmldsig.CanonicalizationMethodType;
+import org.w3.www._2000._09.xmldsig.DigestMethodType;
+import org.w3.www._2000._09.xmldsig.KeyInfoType;
+import org.w3.www._2000._09.xmldsig.ReferenceType;
+import org.w3.www._2000._09.xmldsig.SignatureMethodType;
+import org.w3.www._2000._09.xmldsig.SignatureType;
+import org.w3.www._2000._09.xmldsig.SignatureValueType;
+import org.w3.www._2000._09.xmldsig.SignedInfoType;
+import org.w3.www._2000._09.xmldsig.TransformType;
+import org.w3.www._2000._09.xmldsig.X509DataType;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
+
+import protocol._0._2.SAML.tc.names.oasis.AuthnRequestType;
+import protocol._0._2.SAML.tc.names.oasis.NameIDPolicyType;
+import protocol._0._2.SAML.tc.names.oasis.ResponseType;
+import v1.service.sso_service.up_us.ISSOServiceProxy;
+import assertion._0._2.SAML.tc.names.oasis.NameIDType;
+import assertion._0._2.SAML.tc.names.oasis.SubjectType;
+
+
+public class main {
+
+	private static OperationResultOfArrayOfDocumentMetadataValueBasewJCT_PyJf MDV;
+	private static ResponseType SSOAnswer;
+	private static Object[] SSOAnswerAttrs;
+	private static OperationResultOfArrayOfApplicationTypewJCT_PyJf Appls;
+	private static String docGuidUpped;
+	private static DocumentField[] allowedFields;
+	private static DocumentMetadataValueBase[] metadataValuesForFieldTypes;
+
+	public static void main(String[] args) {
+
+		String pathToProp = main.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+		IWidgetsProxy iWidgetsProxy = new IWidgetsProxy();	
+		try {
+			AuthnRequestType req = CreateRequest("591741", "EverNote");
+			signRequest(req, pathToProp + "/security.properties");
+			
+			ISSOServiceProxy SSOCall = new ISSOServiceProxy();
+			
+			SSOAnswer = SSOCall.getSSO(req);
+			SSOAnswerAttrs = SSOAnswer.getAssertion().getAttributeStatement().getAttribute();
+			String SessionId = ((Object[])SSOAnswerAttrs[0])[0].toString();
+			
+			Path path = Paths.get("D:/auth.json");
+			byte[] data = Files.readAllBytes(path);
+			
+			
+			Appls = iWidgetsProxy.getApplications(SessionId);
+			
+			ApplicationType[] applicationIds = Appls.getReturnValue();
+			
+			docGuidUpped = iWidgetsProxy.uploadFileJava(SessionId, applicationIds[0].getID(), null,null, null, "filename", null, data);
+			allowedFields = iWidgetsProxy.getAllowedFieldsForDocument(SessionId, docGuidUpped).getReturnValue();
+			
+			int metValueTypeId = allowedFields[7].getID();
+			
+			DocumentMetadataValueBase[] DM = new DocumentMetadataValueBase[1];
+			DocumentMetadataValueBase md1 = new DocumentMetadataValueBase();
+			md1.setFieldValue("TyourValidValueForThisTypeOfMeta");
+			md1.setFieldID(78);
+			DM[0] = md1;
+			
+			try{
+				iWidgetsProxy.setMetadataValues(SessionId, docGuidUpped, DM, new int[0]);
+			}catch (Exception e1) {					
+				if(!e1.getCause().getLocalizedMessage().equalsIgnoreCase("No deserializer for {http://www.w3.org/2001/XMLSchema}anyType"))
+					e1.printStackTrace();
+			}
+
+
+			metadataValuesForFieldTypes = iWidgetsProxy.getMetadataValuesForFieldType(SessionId, docGuidUpped, metValueTypeId).getReturnValue();
+			
+		} catch (ClassNotFoundException e1) {
+			e1.printStackTrace();
+		} catch (ParserConfigurationException e1) {
+			e1.printStackTrace();
+		} catch (GeneralSecurityException e1) {
+			e1.printStackTrace();
+		} catch (XMLSignatureException e1) {
+			e1.printStackTrace();
+		} catch (MarshalException e1) {
+			e1.printStackTrace();
+		} catch (Exception e1) {
+				e1.printStackTrace();
+		}
+
+	}
+
+	private static AuthnRequestType CreateRequest(String assertionSubject,
+			String vendor) throws URI.MalformedURIException {
+		AuthnRequestType req = new AuthnRequestType();
+
+		Id id = new Id();
+		id.setValue("_" + UUID.randomUUID().toString());
+		req.setID(id);
+
+		String version = "2.0";
+		req.setVersion(version);
+
+		Calendar issueInstant = Calendar.getInstance();
+		req.setIssueInstant(issueInstant);
+
+		String protocolBinding = "urn:oasis:names:tc:SAML:2.0:bindings:SOAP";
+		req.setProtocolBinding(new URI(protocolBinding));
+
+		req.setProviderName(vendor);
+
+		req.setIsPassive(false);
+
+		NameIDType issuer = new NameIDType();
+		issuer.set_value(vendor);
+		issuer.setFormat(new URI(
+				"urn:oasis:names:tc:SAML:2.0:nameidformat:transient"));
+		req.setIssuer(issuer);
+
+		NameIDPolicyType nameIDPolicy = new NameIDPolicyType();
+		nameIDPolicy.setAllowCreate(true);
+		req.setNameIDPolicy(nameIDPolicy);
+
+		SubjectType subjectType = new SubjectType();
+		NameIDType nameID = new NameIDType();
+		nameID.set_value(assertionSubject);
+		nameID.setFormat(new URI(
+				"urn:oasis:names:tc:SAML:2.0:nameid-format:transient"));
+		subjectType.setNameID(nameID);
+		req.setSubject(subjectType);
+
+		return req;
+	}
+
+	private static void signRequest(AuthnRequestType req, String securityProps)
+			throws ParserConfigurationException, GeneralSecurityException,
+			XMLSignatureException, MarshalException, ClassNotFoundException,
+			Exception {
+
+		DocumentBuilderFactory docFactory = DocumentBuilderFactory
+				.newInstance();
+
+		DocumentBuilder builder = docFactory.newDocumentBuilder();
+		Document document = builder.newDocument();
+
+		Element root = (Element) document.createElement("AuthnRequest");
+		root.setAttribute("ID", req.getID().toString());
+		root.setIdAttribute("ID", true);
+		document.appendChild(root);
+
+		signXML(document.getDocumentElement(), securityProps);
+
+		SignatureType signature = new SignatureType();
+
+		SignedInfoType signedInfo = new SignedInfoType();
+
+		String canonMethodAlg = ((Element) document.getElementsByTagName(
+				"CanonicalizationMethod").item(0)).getAttribute("Algorithm");
+		CanonicalizationMethodType canonMethodType = new CanonicalizationMethodType();
+		canonMethodType.setAlgorithm(new URI(canonMethodAlg));
+		signedInfo.setCanonicalizationMethod(canonMethodType);
+
+		String signMethodAlg = ((Element) document.getElementsByTagName(
+				"SignatureMethod").item(0)).getAttribute("Algorithm");
+		SignatureMethodType signMethod = new SignatureMethodType();
+		signMethod.setAlgorithm(new URI(signMethodAlg));
+		signedInfo.setSignatureMethod(signMethod);
+
+		Element refElem = (Element) document.getElementsByTagName("Reference")
+				.item(0);
+		ReferenceType refType = new ReferenceType();
+		refType.setURI(new URI(refElem.getAttribute("URI")));
+
+		NodeList transformElems = ((Element) refElem.getElementsByTagName(
+				"Transforms").item(0)).getChildNodes();
+		TransformType[] transforms = new TransformType[transformElems
+				.getLength()];
+		for (int i = 0; i < transformElems.getLength(); i++) {
+			TransformType transform = new TransformType();
+			transform.setAlgorithm(new URI(((Element) transformElems.item(0))
+					.getAttribute("Algorithm")));
+			transforms[i] = transform;
+		}
+		refType.setTransforms(transforms);
+
+		String digestMethodAlg = ((Element) refElem.getElementsByTagName(
+				"DigestMethod").item(0)).getAttribute("Algorithm");
+		DigestMethodType digestMethod = new DigestMethodType();
+		digestMethod.setAlgorithm(new URI(digestMethodAlg));
+		refType.setDigestMethod(digestMethod);
+
+		String digestValue = ((Element) refElem.getElementsByTagName(
+				"DigestValue").item(0)).getTextContent();
+		refType.setDigestValue(digestValue.getBytes("UTF-8"));
+		signedInfo.setReference(new ReferenceType[] { refType });
+		signature.setSignedInfo(signedInfo);
+
+		String signValue = ((Element) document.getElementsByTagName(
+				"SignatureValue").item(0)).getTextContent();
+		SignatureValueType signValueType = new SignatureValueType();
+		signValueType.set_value(signValue.getBytes("UTF-8"));
+		signature.setSignatureValue(signValueType);
+
+		String x509 = ((Element) document.getElementsByTagName(
+				"X509Certificate").item(0)).getTextContent();
+		KeyInfoType kiType = new KeyInfoType();
+		X509DataType x509data = new X509DataType();
+		x509data.setX509Certificate(x509.getBytes("UTF-8"));
+		kiType.setX509Data(x509data);
+		signature.setKeyInfo(kiType);
+
+		req.setSignature(signature);
+
+	}
+
+	private static void signXML(Element target, String securityProps)
+			throws GeneralSecurityException, XMLSignatureException,
+			MarshalException, ClassNotFoundException, Exception {
+		Properties props = new Properties();
+		props.load(new FileInputStream(securityProps));
+
+		String providerName = System.getProperty("jsr105Provider",
+				"org.jcp.xml.dsig.internal.dom.XMLDSigRI");
+		XMLSignatureFactory factory = XMLSignatureFactory.getInstance("DOM",
+				(Provider) Class.forName(providerName).newInstance());
+
+		KeyStore keyStore = KeyStoreUtil.getKeyStore(
+				new FileInputStream(props.getProperty("keystore")),
+				props.getProperty("storepass"));
+
+		KeyStore.PrivateKeyEntry entry = (KeyStore.PrivateKeyEntry) keyStore
+				.getEntry(
+						props.getProperty("alias"),
+						new KeyStore.PasswordProtection(props.getProperty(
+								"keypass").toCharArray()));
+		KeyPair keyPair = new KeyPair(entry.getCertificate().getPublicKey(),
+				entry.getPrivateKey());
+
+		KeyInfoFactory kFactory = factory.getKeyInfoFactory();
+		KeyInfo keyInfo = kFactory.newKeyInfo(Collections
+				.singletonList(kFactory.newX509Data(Collections
+						.singletonList(entry.getCertificate()))));
+
+		Reference ref = factory.newReference("#" + target.getAttribute("ID"),
+				factory.newDigestMethod(DigestMethod.SHA1, null), Collections
+						.singletonList(factory.newTransform(
+								Transform.ENVELOPED,
+								(TransformParameterSpec) null)), null, null);
+
+		SignedInfo signedInfo = factory.newSignedInfo(factory
+				.newCanonicalizationMethod(
+						CanonicalizationMethod.INCLUSIVE_WITH_COMMENTS,
+						(C14NMethodParameterSpec) null), factory
+				.newSignatureMethod(SignatureMethod.RSA_SHA1, null),
+				Collections.singletonList(ref));
+
+		XMLSignature signature = factory.newXMLSignature(signedInfo, keyInfo);
+		DOMSignContext signContext = new DOMSignContext(keyPair.getPrivate(),
+				target);
+		signature.sign(signContext);
+	}
+}
