@@ -1,23 +1,19 @@
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
 import java.io.FileInputStream;
-import java.io.InputStreamReader;
-import java.net.URL;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.rmi.RemoteException;
+
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyStore;
 import java.security.Provider;
-import java.util.Arrays;
+
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Properties;
 import java.util.UUID;
 
-import javax.net.ssl.HttpsURLConnection;
 import javax.xml.crypto.MarshalException;
 import javax.xml.crypto.dsig.CanonicalizationMethod;
 import javax.xml.crypto.dsig.DigestMethod;
@@ -39,13 +35,14 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.axis.types.Id;
 import org.apache.axis.types.URI;
+
 import org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.ApplicationType;
 import org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.DocumentField;
 import org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.DocumentMetadataValueBase;
 import org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.OperationResultOfArrayOfApplicationTypewJCT_PyJf;
-import org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.OperationResultOfArrayOfDocumentFieldwJCT_PyJf;
-import org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.OperationResultOfArrayOfDocumentMetadataValueBasewJCT_PyJf;
+
 import org.tempuri.IWidgetsProxy;
+
 import org.w3.www._2000._09.xmldsig.CanonicalizationMethodType;
 import org.w3.www._2000._09.xmldsig.DigestMethodType;
 import org.w3.www._2000._09.xmldsig.KeyInfoType;
@@ -56,10 +53,10 @@ import org.w3.www._2000._09.xmldsig.SignatureValueType;
 import org.w3.www._2000._09.xmldsig.SignedInfoType;
 import org.w3.www._2000._09.xmldsig.TransformType;
 import org.w3.www._2000._09.xmldsig.X509DataType;
+
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 
 import protocol._0._2.SAML.tc.names.oasis.AuthnRequestType;
 import protocol._0._2.SAML.tc.names.oasis.NameIDPolicyType;
@@ -68,10 +65,8 @@ import v1.service.sso_service.up_us.ISSOServiceProxy;
 import assertion._0._2.SAML.tc.names.oasis.NameIDType;
 import assertion._0._2.SAML.tc.names.oasis.SubjectType;
 
-
 public class main {
 
-	private static OperationResultOfArrayOfDocumentMetadataValueBasewJCT_PyJf MDV;
 	private static ResponseType SSOAnswer;
 	private static Object[] SSOAnswerAttrs;
 	private static OperationResultOfArrayOfApplicationTypewJCT_PyJf Appls;
@@ -83,44 +78,56 @@ public class main {
 
 		String pathToProp = main.class.getProtectionDomain().getCodeSource().getLocation().getPath();
 		IWidgetsProxy iWidgetsProxy = new IWidgetsProxy();	
+		
 		try {
-			AuthnRequestType req = CreateRequest("591741", "EverNote");
+			// "1111111111" -  external id of user
+			// "Betterment" -  vendor name
+			AuthnRequestType req = CreateRequest("1111111111", "Betterment");
 			signRequest(req, pathToProp + "/security.properties");
 			
 			ISSOServiceProxy SSOCall = new ISSOServiceProxy();
 			
+			//Get session for current user and vendor for communication with widget's api
 			SSOAnswer = SSOCall.getSSO(req);
 			SSOAnswerAttrs = SSOAnswer.getAssertion().getAttributeStatement().getAttribute();
 			String SessionId = ((Object[])SSOAnswerAttrs[0])[0].toString();
 			
+			//read file to send
 			Path path = Paths.get("D:/auth.json");
 			byte[] data = Files.readAllBytes(path);
 			
-			
+			//get allowed applications for this user 
 			Appls = iWidgetsProxy.getApplications(SessionId);
-			
+						
+			// Betterment app
 			ApplicationType[] applicationIds = Appls.getReturnValue();
 			
-			docGuidUpped = iWidgetsProxy.uploadFileJava(SessionId, applicationIds[0].getID(), null,null, null, "filename", null, data);
+			// send file to server and give doc guid for next steps
+			docGuidUpped = iWidgetsProxy.uploadFileJava(SessionId, applicationIds[2].getID(), null,null, null, "filename", null, data);
+			
 			allowedFields = iWidgetsProxy.getAllowedFieldsForDocument(SessionId, docGuidUpped).getReturnValue();
 			
-			int metValueTypeId = allowedFields[7].getID();
+			int metValueTypeId = allowedFields[7].getID(); // Can take any of allowed values for this user and doc
 			
+			// create Metadata
 			DocumentMetadataValueBase[] DM = new DocumentMetadataValueBase[1];
 			DocumentMetadataValueBase md1 = new DocumentMetadataValueBase();
 			md1.setFieldValue("TyourValidValueForThisTypeOfMeta");
-			md1.setFieldID(78);
+			md1.setFieldID(metValueTypeId);
 			DM[0] = md1;
 			
 			try{
+				// set Metadata to document
 				iWidgetsProxy.setMetadataValues(SessionId, docGuidUpped, DM, new int[0]);
-			}catch (Exception e1) {					
+			}catch (Exception e1) {				
+				// nothing to do in this exception, because it's features to java and C# type "object" 
 				if(!e1.getCause().getLocalizedMessage().equalsIgnoreCase("No deserializer for {http://www.w3.org/2001/XMLSchema}anyType"))
 					e1.printStackTrace();
 			}
 
-
+			// get seted Metadata for doc
 			metadataValuesForFieldTypes = iWidgetsProxy.getMetadataValuesForFieldType(SessionId, docGuidUpped, metValueTypeId).getReturnValue();
+			System.out.print(metadataValuesForFieldTypes[0].getFieldValue()); 
 			
 		} catch (ClassNotFoundException e1) {
 			e1.printStackTrace();
@@ -135,7 +142,6 @@ public class main {
 		} catch (Exception e1) {
 				e1.printStackTrace();
 		}
-
 	}
 
 	private static AuthnRequestType CreateRequest(String assertionSubject,
@@ -223,12 +229,14 @@ public class main {
 				"Transforms").item(0)).getChildNodes();
 		TransformType[] transforms = new TransformType[transformElems
 				.getLength()];
+		
 		for (int i = 0; i < transformElems.getLength(); i++) {
 			TransformType transform = new TransformType();
 			transform.setAlgorithm(new URI(((Element) transformElems.item(0))
 					.getAttribute("Algorithm")));
 			transforms[i] = transform;
 		}
+		
 		refType.setTransforms(transforms);
 
 		String digestMethodAlg = ((Element) refElem.getElementsByTagName(
@@ -258,7 +266,6 @@ public class main {
 		signature.setKeyInfo(kiType);
 
 		req.setSignature(signature);
-
 	}
 
 	private static void signXML(Element target, String securityProps)
@@ -305,6 +312,7 @@ public class main {
 		XMLSignature signature = factory.newXMLSignature(signedInfo, keyInfo);
 		DOMSignContext signContext = new DOMSignContext(keyPair.getPrivate(),
 				target);
+		
 		signature.sign(signContext);
 	}
 }
