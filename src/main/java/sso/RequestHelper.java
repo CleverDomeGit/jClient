@@ -30,9 +30,8 @@ import java.util.Collections;
 import java.util.UUID;
 
 class RequestHelper {
-    public AuthnRequestType createRequest(String assertionSubject, String vendor)
+    public AuthnRequestType createRequest()
             throws URI.MalformedURIException {
-
         AuthnRequestType req = new AuthnRequestType();
 
         Id id = new Id();
@@ -48,12 +47,9 @@ class RequestHelper {
         String protocolBinding = "urn:oasis:names:tc:SAML:2.0:bindings:SOAP";
         req.setProtocolBinding(new URI(protocolBinding));
 
-        req.setProviderName(vendor);
-
         req.setIsPassive(false);
 
         NameIDType issuer = new NameIDType();
-        issuer.set_value(vendor);
         issuer.setFormat(new URI(
                 "urn:oasis:names:tc:SAML:2.0:nameidformat:transient"));
         req.setIssuer(issuer);
@@ -64,13 +60,21 @@ class RequestHelper {
 
         SubjectType subjectType = new SubjectType();
         NameIDType nameID = new NameIDType();
-        nameID.set_value(assertionSubject);
         nameID.setFormat(new URI(
                 "urn:oasis:names:tc:SAML:2.0:nameid-format:transient"));
         subjectType.setNameID(nameID);
         req.setSubject(subjectType);
 
         return req;
+    }
+
+    public void setVendorName(AuthnRequestType request, String vendorName) {
+        request.getIssuer().set_value(vendorName);
+        request.setProviderName(vendorName);
+    }
+
+    public void setExternalUserID(AuthnRequestType request, String externalUserID) {
+        request.getSubject().getNameID().set_value(externalUserID);
     }
 
     public void signRequest(AuthnRequestType req, KeyStore.PrivateKeyEntry entry)

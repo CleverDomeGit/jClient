@@ -12,19 +12,22 @@ import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 
 public class SsoHelper {
+    private RequestHelper requestHelper = new RequestHelper();
+
     public String getSessionID(String externalUserID, String vendorName, KeyStore.PrivateKeyEntry privateKey)
             throws IOException,
             ClassNotFoundException, ParserConfigurationException, GeneralSecurityException, XMLSignatureException, MarshalException, Exception
     {
-        RequestHelper requestHelper = new RequestHelper();
-        AuthnRequestType req = requestHelper.createRequest(externalUserID, vendorName);
-        requestHelper.signRequest(req, privateKey);
+        AuthnRequestType request = requestHelper.createRequest();
+        requestHelper.setVendorName(request, vendorName);
+        requestHelper.setExternalUserID(request, externalUserID);
+        requestHelper.signRequest(request, privateKey);
 
         ISSOServiceProxy ssoService = new ISSOServiceProxy();
 
         //Get session for current user and vendor for communication with widget's api
-        ResponseType SSOAnswer = ssoService.getSSO(req);
-        Object[] SSOAnswerAttrs = SSOAnswer.getAssertion().getAttributeStatement().getAttribute();
+        ResponseType response = ssoService.getSSO(request);
+        Object[] SSOAnswerAttrs = response.getAssertion().getAttributeStatement().getAttribute();
         return ((Object[])SSOAnswerAttrs[0])[0].toString();
     }
 }
