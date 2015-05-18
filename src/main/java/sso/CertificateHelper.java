@@ -1,4 +1,4 @@
-
+package sso;
 
 import java.io.*;
 import java.security.GeneralSecurityException;
@@ -17,7 +17,7 @@ import java.util.List;
 /*
  * Copyright 2006 Will Provost. All rights reserved by Capstone Courseware, LLC.
  */
-public class KeyStoreUtil {
+public class CertificateHelper {
 	/**
 	 * Get a KeyStore object given the keystore filename and password.
 	 */
@@ -150,7 +150,7 @@ public class KeyStoreUtil {
 	public static void main(String[] args) throws Exception {
 		if (args.length < 2) {
 			System.out
-					.println("Usage: java cc.security.KeyStoreUtil <filename> <password>");
+					.println("Usage: java cc.security.sso.CertificateHelper <filename> <password>");
 			System.exit(-1);
 		}
 
