@@ -76,19 +76,18 @@ public class main {
 
 	public static void main(String[] args) {
 
-		String pathToProp = main.class.getProtectionDomain().getCodeSource().getLocation().getPath();
 		IWidgetsProxy iWidgetsProxy = new IWidgetsProxy();	
 		
 		try {
-			// "1111111111" -  external id of user
-			// "Betterment" -  vendor name
-			AuthnRequestType req = CreateRequest("1111111111", "Betterment");
+			VendorProperties vendorProperties =
+                    new VendorProperties("vendor.properties");
+			AuthnRequestType req = CreateRequest(vendorProperties.getExternalUserID(), vendorProperties.getVendorName());
 			signRequest(req, "certificate.properties");
 			
-			ISSOServiceProxy SSOCall = new ISSOServiceProxy();
+			ISSOServiceProxy ssoService = new ISSOServiceProxy();
 			
 			//Get session for current user and vendor for communication with widget's api
-			SSOAnswer = SSOCall.getSSO(req);
+			SSOAnswer = ssoService.getSSO(req);
 			SSOAnswerAttrs = SSOAnswer.getAssertion().getAttributeStatement().getAttribute();
 			String SessionId = ((Object[])SSOAnswerAttrs[0])[0].toString();
 			
@@ -144,8 +143,9 @@ public class main {
 		}
 	}
 
-	private static AuthnRequestType CreateRequest(String assertionSubject,
-			String vendor) throws URI.MalformedURIException {
+	private static AuthnRequestType CreateRequest(String assertionSubject, String vendor)
+            throws URI.MalformedURIException {
+
 		AuthnRequestType req = new AuthnRequestType();
 
 		Id id = new Id();
@@ -273,7 +273,7 @@ public class main {
 			MarshalException, ClassNotFoundException, Exception {
 
 		CertificateProperties certificateProperties =
-				CertificateProperties.readFromResource(certificatePropFile);
+				new CertificateProperties(certificatePropFile);
 
 		String providerName = System.getProperty("jsr105Provider",
 				"org.jcp.xml.dsig.internal.dom.XMLDSigRI");
@@ -281,8 +281,8 @@ public class main {
 				(Provider) Class.forName(providerName).newInstance());
 
 		KeyStore keyStore = KeyStoreUtil.getKeyStore(
-				main.class.getClassLoader().getResourceAsStream(certificateProperties.getKeyStore()),
-				certificateProperties.getKeyStorePass());
+                main.class.getClassLoader().getResourceAsStream(certificateProperties.getKeyStore()),
+                certificateProperties.getKeyStorePass());
 
 		KeyStore.PrivateKeyEntry entry = (KeyStore.PrivateKeyEntry) keyStore
 				.getEntry(

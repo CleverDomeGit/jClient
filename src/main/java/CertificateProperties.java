@@ -1,30 +1,9 @@
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.Properties;
 
-public class CertificateProperties {
+public class CertificateProperties extends AbstractProperties {
 
-    private Properties properties;
-
-    public static CertificateProperties readFromResource(String propFileName)
-        throws IOException {
-
-        Properties props = new Properties();
-        InputStream inputStream = CertificateProperties.class.getClassLoader().getResourceAsStream(propFileName);
-
-        if (inputStream != null) {
-            props.load(inputStream);
-        } else {
-            throw new FileNotFoundException("property file '" + propFileName + "' not found in the classpath");
-        }
-
-        return new CertificateProperties(props);
-
-    }
-
-    private CertificateProperties(Properties properties) {
-        this.properties = properties;
+    public CertificateProperties(String propFileName) throws IOException {
+        super(propFileName);
     }
 
     public String getKeyStore() {
