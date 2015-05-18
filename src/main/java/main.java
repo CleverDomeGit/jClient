@@ -83,7 +83,7 @@ public class main {
 			// "1111111111" -  external id of user
 			// "Betterment" -  vendor name
 			AuthnRequestType req = CreateRequest("1111111111", "Betterment");
-			signRequest(req, pathToProp + "/security.properties");
+			signRequest(req, "certificate.properties");
 			
 			ISSOServiceProxy SSOCall = new ISSOServiceProxy();
 			
@@ -186,7 +186,7 @@ public class main {
 		return req;
 	}
 
-	private static void signRequest(AuthnRequestType req, String securityProps)
+	private static void signRequest(AuthnRequestType req, String certificatePropFile)
 			throws ParserConfigurationException, GeneralSecurityException,
 			XMLSignatureException, MarshalException, ClassNotFoundException,
 			Exception {
@@ -202,7 +202,7 @@ public class main {
 		root.setIdAttribute("ID", true);
 		document.appendChild(root);
 
-		signXML(document.getDocumentElement(), securityProps);
+		signXML(document.getDocumentElement(), certificatePropFile);
 
 		SignatureType signature = new SignatureType();
 
@@ -268,11 +268,12 @@ public class main {
 		req.setSignature(signature);
 	}
 
-	private static void signXML(Element target, String securityProps)
+	private static void signXML(Element target, String certificatePropFile)
 			throws GeneralSecurityException, XMLSignatureException,
 			MarshalException, ClassNotFoundException, Exception {
-		Properties props = new Properties();
-		props.load(new FileInputStream(securityProps));
+
+		CertificateProperties certificateProperties =
+				CertificateProperties.readFromResource(certificatePropFile);
 
 		String providerName = System.getProperty("jsr105Provider",
 				"org.jcp.xml.dsig.internal.dom.XMLDSigRI");
@@ -280,14 +281,13 @@ public class main {
 				(Provider) Class.forName(providerName).newInstance());
 
 		KeyStore keyStore = KeyStoreUtil.getKeyStore(
-				new FileInputStream(props.getProperty("keystore")),
-				props.getProperty("storepass"));
+				new FileInputStream(certificateProperties.getKeyStore()),
+				certificateProperties.getKeyStorePass());
 
 		KeyStore.PrivateKeyEntry entry = (KeyStore.PrivateKeyEntry) keyStore
 				.getEntry(
-						props.getProperty("alias"),
-						new KeyStore.PasswordProtection(props.getProperty(
-								"keypass").toCharArray()));
+						certificateProperties.getAlias(),
+						new KeyStore.PasswordProtection(certificateProperties.getKeyPass().toCharArray()));
 		KeyPair keyPair = new KeyPair(entry.getCertificate().getPublicKey(),
 				entry.getPrivateKey());
 
