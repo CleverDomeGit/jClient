@@ -1,5 +1,6 @@
 import java.io.FileInputStream;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -14,6 +15,7 @@ import java.util.Collections;
 import java.util.Properties;
 import java.util.UUID;
 
+import javax.swing.text.html.parser.Parser;
 import javax.xml.crypto.MarshalException;
 import javax.xml.crypto.dsig.CanonicalizationMethod;
 import javax.xml.crypto.dsig.DigestMethod;
@@ -67,29 +69,34 @@ import assertion._0._2.SAML.tc.names.oasis.SubjectType;
 
 public class main {
 
-	private static ResponseType SSOAnswer;
-	private static Object[] SSOAnswerAttrs;
 	private static OperationResultOfArrayOfApplicationTypewJCT_PyJf Appls;
 	private static String docGuidUpped;
 	private static DocumentField[] allowedFields;
 	private static DocumentMetadataValueBase[] metadataValuesForFieldTypes;
+
+    public static String GetSessionID(VendorProperties vendorProperties, CertificateProperties certificateProperties)
+            throws IOException,
+        ClassNotFoundException, ParserConfigurationException, GeneralSecurityException, XMLSignatureException, MarshalException, Exception
+    {
+        AuthnRequestType req = CreateRequest(vendorProperties.getExternalUserID(), vendorProperties.getVendorName());
+        signRequest(req, certificateProperties);
+
+        ISSOServiceProxy ssoService = new ISSOServiceProxy();
+
+        //Get session for current user and vendor for communication with widget's api
+        ResponseType SSOAnswer = ssoService.getSSO(req);
+        Object[] SSOAnswerAttrs = SSOAnswer.getAssertion().getAttributeStatement().getAttribute();
+        return ((Object[])SSOAnswerAttrs[0])[0].toString();
+    }
 
 	public static void main(String[] args) {
 
 		IWidgetsProxy iWidgetsProxy = new IWidgetsProxy();	
 		
 		try {
-			VendorProperties vendorProperties =
-                    new VendorProperties("vendor.properties");
-			AuthnRequestType req = CreateRequest(vendorProperties.getExternalUserID(), vendorProperties.getVendorName());
-			signRequest(req, "certificate.properties");
-			
-			ISSOServiceProxy ssoService = new ISSOServiceProxy();
-			
-			//Get session for current user and vendor for communication with widget's api
-			SSOAnswer = ssoService.getSSO(req);
-			SSOAnswerAttrs = SSOAnswer.getAssertion().getAttributeStatement().getAttribute();
-			String SessionId = ((Object[])SSOAnswerAttrs[0])[0].toString();
+            VendorProperties vendorProperties = new VendorProperties("vendor.properties");
+            CertificateProperties certificateProperties = new CertificateProperties("certificate.properties");
+			String SessionId = GetSessionID(vendorProperties, certificateProperties);
 			
 			//read file to send
 			Path path = Paths.get("D:/auth.json");
@@ -186,7 +193,7 @@ public class main {
 		return req;
 	}
 
-	private static void signRequest(AuthnRequestType req, String certificatePropFile)
+	private static void signRequest(AuthnRequestType req, CertificateProperties certificateProperties)
 			throws ParserConfigurationException, GeneralSecurityException,
 			XMLSignatureException, MarshalException, ClassNotFoundException,
 			Exception {
@@ -202,7 +209,7 @@ public class main {
 		root.setIdAttribute("ID", true);
 		document.appendChild(root);
 
-		signXML(document.getDocumentElement(), certificatePropFile);
+		signXML(document.getDocumentElement(), certificateProperties);
 
 		SignatureType signature = new SignatureType();
 
@@ -268,12 +275,9 @@ public class main {
 		req.setSignature(signature);
 	}
 
-	private static void signXML(Element target, String certificatePropFile)
+	private static void signXML(Element target, CertificateProperties certificateProperties)
 			throws GeneralSecurityException, XMLSignatureException,
 			MarshalException, ClassNotFoundException, Exception {
-
-		CertificateProperties certificateProperties =
-				new CertificateProperties(certificatePropFile);
 
 		String providerName = System.getProperty("jsr105Provider",
 				"org.jcp.xml.dsig.internal.dom.XMLDSigRI");
