@@ -281,7 +281,7 @@ public class main {
 				(Provider) Class.forName(providerName).newInstance());
 
 		KeyStore keyStore = KeyStoreUtil.getKeyStore(
-				new FileInputStream(certificateProperties.getKeyStore()),
+				main.class.getClassLoader().getResourceAsStream(certificateProperties.getKeyStore()),
 				certificateProperties.getKeyStorePass());
 
 		KeyStore.PrivateKeyEntry entry = (KeyStore.PrivateKeyEntry) keyStore
