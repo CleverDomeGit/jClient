@@ -1,15 +1,11 @@
-import java.rmi.Remote;
-import java.rmi.RemoteException;
 import java.security.*;
 
 import org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.ApplicationType;
 import org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.DocumentField;
 import org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.DocumentMetadataValueBase;
 
-import org.tempuri.IWidgets;
 import org.tempuri.IWidgetsProxy;
 
-import sso.SsoAuthenticationException;
 import sso.SsoHelper;
 import sso.CertificateHelper;
 
@@ -115,14 +111,22 @@ public class main {
                     getPrivateKey(certificateProperties));
 
 			int bucketID = getBucketID(iWidgetsProxy, sessionID, demoProperties);
+            System.out.println("Upload file to bucket ID " + bucketID);
 
             String documentGuid = uploadFile(iWidgetsProxy, sessionID, bucketID, demoProperties);
+            System.out.println("Upload document Guid is " + documentGuid);
 
             int fieldID = getFieldID(iWidgetsProxy, sessionID, documentGuid, demoProperties);
+            System.out.println("Adding new field with ID " + fieldID + " to document");
 
 			addField(iWidgetsProxy, sessionID, documentGuid, fieldID, demoProperties);
+            System.out.println("Success");
 
             String[] fieldValues = getFieldValues(iWidgetsProxy, sessionID, documentGuid, fieldID);
+            System.out.println("List of all values of this field");
+            for (String fieldValue: fieldValues) {
+                System.out.println(fieldValue);
+            }
 
 		} catch (Exception exception) {
             exception.printStackTrace();
