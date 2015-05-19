@@ -6,6 +6,7 @@ import org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.Appl
 import org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.DocumentField;
 import org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.DocumentMetadataValueBase;
 
+import org.tempuri.IWidgets;
 import org.tempuri.IWidgetsProxy;
 
 import sso.SsoAuthenticationException;
@@ -41,6 +42,15 @@ public class main {
 
     }
 
+    public static String uploadFile(IWidgetsProxy iWidgetsProxy, String sessionID, int bucketID, DemoProperties demoProperties) throws Exception {
+
+        String fileName = demoProperties.getTestFileName();
+        byte[] fileBytes = demoProperties.getTestFileBytes();
+
+        return iWidgetsProxy.uploadFileJava(sessionID, bucketID, null, null, null, fileName, null, fileBytes);
+
+    }
+
 	public static void main(String[] args) {
 
 		IWidgetsProxy iWidgetsProxy = new IWidgetsProxy();	
@@ -57,9 +67,8 @@ public class main {
 
 
 			int bucketID = getBucketID(iWidgetsProxy, sessionID, demoProperties);
-            byte[] fileBytes = demoProperties.getTestFileBytes();
 
-            String documentGuid = iWidgetsProxy.uploadFileJava(sessionID, bucketID, null,null, null, "filename", null, fileBytes);
+            String documentGuid = uploadFile(iWidgetsProxy, sessionID, bucketID, demoProperties);
 
             DocumentField[] allowedFields = iWidgetsProxy.getAllowedFieldsForDocument(sessionID, documentGuid).getReturnValue();
 
