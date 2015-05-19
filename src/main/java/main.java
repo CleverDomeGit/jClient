@@ -35,6 +35,7 @@ public class main {
 		try {
             VendorProperties vendorProperties = new VendorProperties("vendor.properties");
             CertificateProperties certificateProperties = new CertificateProperties("certificate.properties");
+            DemoProperties demoProperties = new DemoProperties("demo.properties");
 
             SsoHelper ssoHelper = new SsoHelper();
 			String SessionId = ssoHelper.getSessionID(vendorProperties.getExternalUserID(),
@@ -42,8 +43,7 @@ public class main {
                     getPrivateKey(certificateProperties));
 
 			//read file to send
-			Path path = Paths.get("D:/auth.json");
-			byte[] data = Files.readAllBytes(path);
+			byte[] data = demoProperties.getTestFileBytes();
 
 			// Betterment app
 			ApplicationType[] applicationIds =  iWidgetsProxy.getApplications(SessionId).getReturnValue();
