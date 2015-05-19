@@ -77,7 +77,7 @@ public class main {
         DocumentMetadataValueBase[] fields = new DocumentMetadataValueBase[] { field };
 
         try {
-            iWidgetsProxy.setMetadataValues(sessionID, documentGuid, fields, null);
+            iWidgetsProxy.setMetadataValues(sessionID, documentGuid, fields, new int[0]);
         } catch (Exception exception) {
             if(!exception.getCause().getLocalizedMessage()
                     .equalsIgnoreCase("No deserializer for {http://www.w3.org/2001/XMLSchema}anyType")) {
