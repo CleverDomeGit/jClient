@@ -27,7 +27,7 @@ public class main {
                         new KeyStore.PasswordProtection(certificateProperties.getKeyPass().toCharArray()));
     }
 
-    public static int getBucketID(IWidgetsProxy iWidgetsProxy, String sessionID, DemoProperties demoProperties) throws Exception {
+    private static int getBucketID(IWidgetsProxy iWidgetsProxy, String sessionID, DemoProperties demoProperties) throws Exception {
 
         String bucketName = demoProperties.getBucketName();
 
@@ -42,12 +42,61 @@ public class main {
 
     }
 
-    public static String uploadFile(IWidgetsProxy iWidgetsProxy, String sessionID, int bucketID, DemoProperties demoProperties) throws Exception {
+    private static String uploadFile(IWidgetsProxy iWidgetsProxy, String sessionID, int bucketID, DemoProperties demoProperties) throws Exception {
 
         String fileName = demoProperties.getTestFileName();
         byte[] fileBytes = demoProperties.getTestFileBytes();
 
         return iWidgetsProxy.uploadFileJava(sessionID, bucketID, null, null, null, fileName, null, fileBytes);
+
+    }
+
+    private static int getFieldID(IWidgetsProxy iWidgetsProxy, String sessionID, String documentGuid, DemoProperties demoProperties) throws  Exception {
+
+        String fieldName = demoProperties.getFieldName();
+
+        DocumentField[] allowedFields = iWidgetsProxy.getAllowedFieldsForDocument(sessionID, documentGuid).getReturnValue();
+        for (DocumentField field : allowedFields) {
+            if (field.getName().equals(fieldName)) {
+                return field.getID();
+            }
+        }
+
+        throw new Exception("Field '" + fieldName + "' is not allowed on document '" + documentGuid + "'");
+
+    }
+
+    private static void addField(IWidgetsProxy iWidgetsProxy, String sessionID, String documentGuid, int fieldID, DemoProperties demoProperties) throws Exception {
+
+        String fieldValue = demoProperties.getFieldValue();
+
+        DocumentMetadataValueBase field = new DocumentMetadataValueBase();
+        field.setFieldValue(fieldValue);
+        field.setFieldID(fieldID);
+
+        DocumentMetadataValueBase[] fields = new DocumentMetadataValueBase[] { field };
+
+        try {
+            iWidgetsProxy.setMetadataValues(sessionID, documentGuid, fields, null);
+        } catch (Exception exception) {
+            if(!exception.getCause().getLocalizedMessage()
+                    .equalsIgnoreCase("No deserializer for {http://www.w3.org/2001/XMLSchema}anyType")) {
+                exception.printStackTrace();
+            }
+        }
+
+    }
+
+    private static String[] getFieldValues(IWidgetsProxy iWidgetsProxy, String sessionID, String documentGuid, int fieldID) throws Exception {
+
+        DocumentMetadataValueBase[] fields = iWidgetsProxy.getMetadataValuesForFieldType(sessionID, documentGuid, fieldID).getReturnValue();
+        String[] fieldValues = new String[fields.length];
+
+        for (int i = 0; i < fields.length; i++) {
+            fieldValues[i] = fields[i].getFieldValue();
+        }
+
+        return fieldValues;
 
     }
 
@@ -65,41 +114,18 @@ public class main {
                     vendorProperties.getVendorName(),
                     getPrivateKey(certificateProperties));
 
-
 			int bucketID = getBucketID(iWidgetsProxy, sessionID, demoProperties);
 
             String documentGuid = uploadFile(iWidgetsProxy, sessionID, bucketID, demoProperties);
 
-            DocumentField[] allowedFields = iWidgetsProxy.getAllowedFieldsForDocument(sessionID, documentGuid).getReturnValue();
+            int fieldID = getFieldID(iWidgetsProxy, sessionID, documentGuid, demoProperties);
 
-			int metValueTypeId = allowedFields[7].getID(); // Can take any of allowed values for this user and doc
+			addField(iWidgetsProxy, sessionID, documentGuid, fieldID, demoProperties);
 
-			// create Metadata
-			DocumentMetadataValueBase[] DM = new DocumentMetadataValueBase[1];
-			DocumentMetadataValueBase md1 = new DocumentMetadataValueBase();
-			md1.setFieldValue("TyourValidValueForThisTypeOfMeta");
-			md1.setFieldID(metValueTypeId);
-			DM[0] = md1;
+            String[] fieldValues = getFieldValues(iWidgetsProxy, sessionID, documentGuid, fieldID);
 
-			try{
-				// set Metadata to document
-				iWidgetsProxy.setMetadataValues(sessionID, documentGuid, DM, new int[0]);
-			}catch (Exception e1) {
-				// nothing to do in this exception, because it's features to java and C# type "object"
-				if(!e1.getCause().getLocalizedMessage().equalsIgnoreCase("No deserializer for {http://www.w3.org/2001/XMLSchema}anyType"))
-					e1.printStackTrace();
-			}
-
-			// get seted Metadata for doc
-            DocumentMetadataValueBase[] metadataValuesForFieldTypes = iWidgetsProxy.getMetadataValuesForFieldType(sessionID, documentGuid, metValueTypeId).getReturnValue();
-			System.out.print(metadataValuesForFieldTypes[0].getFieldValue());
-
-		} catch (SsoAuthenticationException ssoAuthException) {
-            ssoAuthException.printStackTrace();
-		} catch (GeneralSecurityException e1) {
-			e1.printStackTrace();
-		} catch (Exception e1) {
-				e1.printStackTrace();
+		} catch (Exception exception) {
+            exception.printStackTrace();
 		}
 	}
 }

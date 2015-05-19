@@ -36,4 +36,12 @@ public class DemoProperties extends AbstractProperties {
         return properties.getProperty("bucketName");
     }
 
+    public String getFieldName() {
+        return properties.getProperty("fieldName");
+    }
+
+    public String getFieldValue() {
+        return properties.getProperty("fieldValue");
+    }
+
 }
