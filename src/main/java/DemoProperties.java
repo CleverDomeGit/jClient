@@ -17,7 +17,6 @@ public class DemoProperties extends AbstractProperties {
                 .getResourceAsStream(getTestFileName());
         return readBytesFromInputStream(inputStream);
     }
-
     private byte[] readBytesFromInputStream(InputStream inputStream) throws IOException {
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 
@@ -31,6 +30,10 @@ public class DemoProperties extends AbstractProperties {
         buffer.flush();
 
         return buffer.toByteArray();
+    }
+
+    public String getBucketName() {
+        return properties.getProperty("bucketName");
     }
 
 }

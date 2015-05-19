@@ -1,7 +1,5 @@
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
+import java.rmi.Remote;
+import java.rmi.RemoteException;
 import java.security.*;
 
 import org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.ApplicationType;
@@ -16,7 +14,7 @@ import sso.CertificateHelper;
 
 public class main {
 
-    public static KeyStore.PrivateKeyEntry getPrivateKey(CertificateProperties certificateProperties)
+    private static KeyStore.PrivateKeyEntry getPrivateKey(CertificateProperties certificateProperties)
         throws KeyStoreException, NoSuchAlgorithmException, UnrecoverableEntryException {
         KeyStore keyStore = CertificateHelper.getKeyStore(
                 main.class.getClassLoader().getResourceAsStream(certificateProperties.getKeyStore()),
@@ -26,6 +24,21 @@ public class main {
                 .getEntry(
                         certificateProperties.getAlias(),
                         new KeyStore.PasswordProtection(certificateProperties.getKeyPass().toCharArray()));
+    }
+
+    public static int getBucketID(IWidgetsProxy iWidgetsProxy, String sessionID, DemoProperties demoProperties) throws Exception {
+
+        String bucketName = demoProperties.getBucketName();
+
+        ApplicationType[] buckets =  iWidgetsProxy.getApplications(sessionID).getReturnValue();
+        for (ApplicationType bucket : buckets) {
+            if (bucket.getName().equals(bucketName)) {
+                return bucket.getID();
+            }
+        }
+
+        throw new Exception("Bucket '" + bucketName + "' is not found");
+
     }
 
 	public static void main(String[] args) {
@@ -38,20 +51,17 @@ public class main {
             DemoProperties demoProperties = new DemoProperties("demo.properties");
 
             SsoHelper ssoHelper = new SsoHelper();
-			String SessionId = ssoHelper.getSessionID(vendorProperties.getExternalUserID(),
+			String sessionID = ssoHelper.getSessionID(vendorProperties.getExternalUserID(),
                     vendorProperties.getVendorName(),
                     getPrivateKey(certificateProperties));
 
-			//read file to send
-			byte[] data = demoProperties.getTestFileBytes();
 
-			// Betterment app
-			ApplicationType[] applicationIds =  iWidgetsProxy.getApplications(SessionId).getReturnValue();
+			int bucketID = getBucketID(iWidgetsProxy, sessionID, demoProperties);
+            byte[] fileBytes = demoProperties.getTestFileBytes();
 
-			// send file to server and give doc guid for next steps
-            String documentGuid = iWidgetsProxy.uploadFileJava(SessionId, applicationIds[2].getID(), null,null, null, "filename", null, data);
+            String documentGuid = iWidgetsProxy.uploadFileJava(sessionID, bucketID, null,null, null, "filename", null, fileBytes);
 
-            DocumentField[] allowedFields = iWidgetsProxy.getAllowedFieldsForDocument(SessionId, documentGuid).getReturnValue();
+            DocumentField[] allowedFields = iWidgetsProxy.getAllowedFieldsForDocument(sessionID, documentGuid).getReturnValue();
 
 			int metValueTypeId = allowedFields[7].getID(); // Can take any of allowed values for this user and doc
 
@@ -64,7 +74,7 @@ public class main {
 
 			try{
 				// set Metadata to document
-				iWidgetsProxy.setMetadataValues(SessionId, documentGuid, DM, new int[0]);
+				iWidgetsProxy.setMetadataValues(sessionID, documentGuid, DM, new int[0]);
 			}catch (Exception e1) {
 				// nothing to do in this exception, because it's features to java and C# type "object"
 				if(!e1.getCause().getLocalizedMessage().equalsIgnoreCase("No deserializer for {http://www.w3.org/2001/XMLSchema}anyType"))
@@ -72,7 +82,7 @@ public class main {
 			}
 
 			// get seted Metadata for doc
-            DocumentMetadataValueBase[] metadataValuesForFieldTypes = iWidgetsProxy.getMetadataValuesForFieldType(SessionId, documentGuid, metValueTypeId).getReturnValue();
+            DocumentMetadataValueBase[] metadataValuesForFieldTypes = iWidgetsProxy.getMetadataValuesForFieldType(sessionID, documentGuid, metValueTypeId).getReturnValue();
 			System.out.print(metadataValuesForFieldTypes[0].getFieldValue());
 
 		} catch (SsoAuthenticationException ssoAuthException) {
