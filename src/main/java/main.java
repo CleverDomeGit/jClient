@@ -4,14 +4,9 @@ import java.nio.file.Paths;
 
 import java.security.*;
 
-import javax.xml.crypto.MarshalException;
-import javax.xml.crypto.dsig.XMLSignatureException;
-import javax.xml.parsers.ParserConfigurationException;
-
 import org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.ApplicationType;
 import org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.DocumentField;
 import org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.DocumentMetadataValueBase;
-import org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.OperationResultOfArrayOfApplicationTypewJCT_PyJf;
 
 import org.tempuri.IWidgetsProxy;
 
@@ -20,11 +15,6 @@ import sso.SsoHelper;
 import sso.CertificateHelper;
 
 public class main {
-
-	private static OperationResultOfArrayOfApplicationTypewJCT_PyJf Appls;
-	private static String docGuidUpped;
-	private static DocumentField[] allowedFields;
-	private static DocumentMetadataValueBase[] metadataValuesForFieldTypes;
 
     public static KeyStore.PrivateKeyEntry getPrivateKey(CertificateProperties certificateProperties)
         throws KeyStoreException, NoSuchAlgorithmException, UnrecoverableEntryException {
@@ -55,16 +45,13 @@ public class main {
 			Path path = Paths.get("D:/auth.json");
 			byte[] data = Files.readAllBytes(path);
 
-			//get allowed applications for this user
-			Appls = iWidgetsProxy.getApplications(SessionId);
-
 			// Betterment app
-			ApplicationType[] applicationIds = Appls.getReturnValue();
+			ApplicationType[] applicationIds =  iWidgetsProxy.getApplications(SessionId).getReturnValue();
 
 			// send file to server and give doc guid for next steps
-			docGuidUpped = iWidgetsProxy.uploadFileJava(SessionId, applicationIds[2].getID(), null,null, null, "filename", null, data);
+            String documentGuid = iWidgetsProxy.uploadFileJava(SessionId, applicationIds[2].getID(), null,null, null, "filename", null, data);
 
-			allowedFields = iWidgetsProxy.getAllowedFieldsForDocument(SessionId, docGuidUpped).getReturnValue();
+            DocumentField[] allowedFields = iWidgetsProxy.getAllowedFieldsForDocument(SessionId, documentGuid).getReturnValue();
 
 			int metValueTypeId = allowedFields[7].getID(); // Can take any of allowed values for this user and doc
 
@@ -77,7 +64,7 @@ public class main {
 
 			try{
 				// set Metadata to document
-				iWidgetsProxy.setMetadataValues(SessionId, docGuidUpped, DM, new int[0]);
+				iWidgetsProxy.setMetadataValues(SessionId, documentGuid, DM, new int[0]);
 			}catch (Exception e1) {
 				// nothing to do in this exception, because it's features to java and C# type "object"
 				if(!e1.getCause().getLocalizedMessage().equalsIgnoreCase("No deserializer for {http://www.w3.org/2001/XMLSchema}anyType"))
@@ -85,7 +72,7 @@ public class main {
 			}
 
 			// get seted Metadata for doc
-			metadataValuesForFieldTypes = iWidgetsProxy.getMetadataValuesForFieldType(SessionId, docGuidUpped, metValueTypeId).getReturnValue();
+            DocumentMetadataValueBase[] metadataValuesForFieldTypes = iWidgetsProxy.getMetadataValuesForFieldType(SessionId, documentGuid, metValueTypeId).getReturnValue();
 			System.out.print(metadataValuesForFieldTypes[0].getFieldValue());
 
 		} catch (SsoAuthenticationException ssoAuthException) {
