@@ -40,22 +40,28 @@ Contains information describing the flow of the demo application.
 ## Functionality
 
 1. Single Sign On
+
 Gets CleverDome session based on data provided in Vendor Properties. This session value is used in next
 operations in order to identify user and verify he has necessary permissions to complete these actions.
 
 2. Get Bucket ID
+
 Completes getApplications operation (gets all buckets allowed to user) and extract the identifier of bucket
 specified in Demo Properties.
 
 3. Upload File
+
 Uploads test file from resources to selected bucket. Document identifier is result type.
 
 4. Get Metadata Field ID
+
 Completes getAllowedFieldsForDocument operation (gets all allowed metadata fields for document) and extract the
 identifier of field specified in Demo Properties.
 
 5. Add Metadata Field
+
 Adds metadata field with identifier extracted from previous procedure and value retrieved from Demo Properties.
 
 6. List Metadata Fields
+
 Completes getMetadataValuesForFieldType operation with specified field identifier.
