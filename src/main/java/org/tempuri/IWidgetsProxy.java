@@ -692,7 +692,7 @@ public class IWidgetsProxy implements org.tempuri.IWidgets {
     return iWidgets.getUserDefinedMetadata(sessionID, documentGuid);
   }
   
-  public org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.OperationResultOfanyType setMetadataValues(java.lang.String sessionID, java.lang.String documentGuid, org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.DocumentMetadataValueBase[] documentMetadata, int[] removeRecordIDs) throws java.rmi.RemoteException{
+  public org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.OperationResultOfboolean setMetadataValues(java.lang.String sessionID, java.lang.String documentGuid, org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.DocumentMetadataValueBase[] documentMetadata, int[] removeRecordIDs) throws java.rmi.RemoteException{
     if (iWidgets == null)
       _initIWidgetsProxy();
     return iWidgets.setMetadataValues(sessionID, documentGuid, documentMetadata, removeRecordIDs);

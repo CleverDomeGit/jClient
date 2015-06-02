@@ -2075,8 +2075,8 @@ public class BasicHttpBinding_IWidgetsStub extends org.apache.axis.client.Stub i
         param.setOmittable(true);
         param.setNillable(true);
         oper.addParameter(param);
-        oper.setReturnType(new javax.xml.namespace.QName("http://schemas.datacontract.org/2004/07/CleverDomeDocumentManagement.Data", "OperationResultOfanyType"));
-        oper.setReturnClass(org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.OperationResultOfanyType.class);
+        oper.setReturnType(new javax.xml.namespace.QName("http://schemas.datacontract.org/2004/07/CleverDomeDocumentManagement.Data", "OperationResultOfboolean"));
+        oper.setReturnClass(org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.OperationResultOfboolean.class);
         oper.setReturnQName(new javax.xml.namespace.QName("http://tempuri.org/", "SetMetadataValuesResult"));
         oper.setStyle(org.apache.axis.constants.Style.WRAPPED);
         oper.setUse(org.apache.axis.constants.Use.LITERAL);
@@ -10212,7 +10212,7 @@ public class BasicHttpBinding_IWidgetsStub extends org.apache.axis.client.Stub i
 }
     }
 
-    public org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.OperationResultOfanyType setMetadataValues(java.lang.String sessionID, java.lang.String documentGuid, org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.DocumentMetadataValueBase[] documentMetadata, int[] removeRecordIDs) throws java.rmi.RemoteException {
+    public org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.OperationResultOfboolean setMetadataValues(java.lang.String sessionID, java.lang.String documentGuid, org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.DocumentMetadataValueBase[] documentMetadata, int[] removeRecordIDs) throws java.rmi.RemoteException {
         if (super.cachedEndpoint == null) {
             throw new org.apache.axis.NoEndPointException();
         }
@@ -10236,9 +10236,9 @@ public class BasicHttpBinding_IWidgetsStub extends org.apache.axis.client.Stub i
         else {
             extractAttachments(_call);
             try {
-                return (org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.OperationResultOfanyType) _resp;
+                return (org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.OperationResultOfboolean) _resp;
             } catch (java.lang.Exception _exception) {
-                return (org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.OperationResultOfanyType) org.apache.axis.utils.JavaUtils.convert(_resp, org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.OperationResultOfanyType.class);
+                return (org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.OperationResultOfboolean) org.apache.axis.utils.JavaUtils.convert(_resp, org.datacontract.schemas._2004._07.CleverDomeDocumentManagement_Data.OperationResultOfboolean.class);
             }
         }
   } catch (org.apache.axis.AxisFault axisFaultException) {

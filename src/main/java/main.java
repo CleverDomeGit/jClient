@@ -72,9 +72,7 @@ public class main {
 
         DocumentMetadataValueBase[] fields = new DocumentMetadataValueBase[] { field };
 
-        try {
-            iWidgetsProxy.setMetadataValues(sessionID, documentGuid, fields, new int[0]);
-        } catch (Exception exception) { }
+        iWidgetsProxy.setMetadataValues(sessionID, documentGuid, fields, new int[0]);
 
     }
 
